@@ -1,0 +1,34 @@
+%YAML:1.0
+
+
+# the project directory 
+project_dir: /home/robot/a_myfile/localization
+
+
+# data
+# the tum dataset directory
+image_database_dir: /home/robot/a_myfile/data/image_data_taozihu/222
+image_query_dir: /home/robot/a_myfile/data/image_query/taozihu1
+
+# the vocabulary directory
+vocabulary_dir: /home/robot/a_myfile/data/vocabulary/orbvoc.dbow3
+database_dir:/home/robot/a_myfile/data/database/database1.yml.gz
+
+# camera intrinsics
+# fr1
+camera.fx: 517.3
+camera.fy: 516.5
+camera.cx: 325.1
+camera.cy: 249.7
+
+camera.depth_scale: 5000
+
+# VO paras
+number_of_features: 500
+scale_factor: 1.2
+level_pyramid: 8
+match_ratio: 2.0
+max_num_lost: 10
+min_inliers: 10
+keyframe_rotation: 0.1
+keyframe_translation: 0.1
