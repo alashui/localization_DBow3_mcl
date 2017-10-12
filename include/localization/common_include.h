@@ -16,6 +16,8 @@ using Sophus::SO3;
 
 // for cv
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/features2d/features2d.hpp>
 using cv::Mat;
 
 // std 
@@ -28,5 +30,6 @@ using cv::Mat;
 #include <unordered_map>
 #include <map>
 
-using namespace std; 
+using namespace std;
+using namespace cv; 
 #endif

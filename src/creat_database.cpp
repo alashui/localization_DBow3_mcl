@@ -1,13 +1,7 @@
-#include "DBoW3/DBoW3.h"
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <iostream>
-#include <vector>
-#include <string>
- 
-#include <dirent.h>  
+#include "localization/common_include.h"
 
+#include "DBoW3/DBoW3.h" 
+#include <dirent.h>   //用于遍历目录文件的库
 #include "localization/config.h"
 
 using namespace cv;
@@ -22,12 +16,12 @@ int main( int argc, char** argv )
     }
 
     localization::Config::setParameterFile ( argv[1] );    
-    string project_dir = localization::Config::get<string> ( "project_dir" );
+    //string project_dir = localization::Config::get<string> ( "project_dir" );
     string vocabulary_dir = localization::Config::get<string> ( "vocabulary_dir" );
     string database_dir = localization::Config::get<string> ( "database_dir" );
     string image_database_dir = localization::Config::get<string> ( "image_database_dir" );
 
-    string image_query_dir = localization::Config::get<string> ( "image_query_dir" );
+    //string image_query_dir = localization::Config::get<string> ( "image_query_dir" );
 
     // read the vocabulary
     cout <<"reading vocabulary"<< endl;
@@ -85,51 +79,7 @@ int main( int argc, char** argv )
     cout<<"database info: "<<db<<endl;
     cout<<"database save in" << database_dir <<endl;
     cout<<"done."<<endl;
-
-
-
-
-    //读取待查询的图片,提取特征并计算描述子
-    cout<<"reading images "<<endl;
-    vector<Mat> query_images; 
-    for ( int i=0; i<4; i++ )
-    {
-        string path = image_query_dir+"/"+to_string(i+1)+".png";
-        query_images.push_back( imread(path) );
-    }
-
-    cout<<"detecting ORB features ... "<<endl;
-    //Ptr< Feature2D > detector = ORB::create();
-    vector<Mat> query_descriptors;
-    for ( Mat& image:query_images )
-    {
-        vector<KeyPoint> keypoints; 
-        Mat descriptor;
-        detector->detectAndCompute( image, Mat(), keypoints, descriptor );
-        query_descriptors.push_back( descriptor );
-    }
-
-
-    // 在数据库中检索与待查询图像相似度最高的几帧图像,并计算得分
-    cout<<"comparing images with database "<<endl;
-    
-    for ( int i=0; i<query_descriptors.size(); i++ )
-    {
-        DBoW3::QueryResults ret;
-        db.query( query_descriptors[i], ret, 5);      // max result=4
-        cout<<"searching for image "<<i<<" returns "<<ret<<endl<<endl;
-    }
-    cout<<"done."<<endl;
-
-
-
-
-
-
-
-
-
-
+}
     /*
     cout<<"image_database_dir: "<< image_database_dir <<endl;
 
@@ -172,7 +122,7 @@ int main( int argc, char** argv )
     cout<<"extract total "<<descriptors.size()*500<<" features."<<endl;
     */
     
-}
+
 
 
    
