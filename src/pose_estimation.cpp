@@ -11,7 +11,7 @@
 namespace localization
 {
 
-VisualOdometry::VisualOdometry() :
+PoseEstimation::PoseEstimation() :
     state_ ( INITIALIZING ), ref_ ( nullptr ), curr_ ( nullptr ), map_ ( new Map ), num_lost_ ( 0 ), num_inliers_ ( 0 ), matcher_flann_ ( new cv::flann::LshIndexParams ( 5,10,2 ) )
 {
 
@@ -24,23 +24,24 @@ VisualOdometry::VisualOdometry() :
     
 }
 
-VisualOdometry::~VisualOdometry()
+PoseEstimation::~PoseEstimation()
 {
 
 }
-
-void VisualOdometry::featureMatching()
+//匹配当前帧和参考帧,实际处理是匹配当前帧的特征点和出现在参考帧中的地图点
+void PoseEstimation::featureMatching(const Frame::Ptr frame_curr,
+									 const Frame::Ptr frame_ref)
 {
     boost::timer timer;
     vector<cv::DMatch> matches;
     // select the candidates in map 
     Mat desp_map;
     vector<MapPoint::Ptr> candidate;
-    for ( auto& allpoints: map_->map_points_ )
+    for ( auto& allpoints: map_->map_points_ )  //筛选出属于参考帧的地图点
     {
         MapPoint::Ptr& p = allpoints.second;
         // check if p in curr frame image 
-        if ( ref_->isInFrame(p->pos_) )
+        if ( frame_ref->isInFrame(p->pos_) )
         {
             // add to candidate 
             p->visible_times_++;
@@ -49,14 +50,15 @@ void VisualOdometry::featureMatching()
         }
     }
     
-    matcher_flann_.match ( desp_map, curr_->descriptors_, matches );
-    // select the best matches
+    matcher_flann_.match ( desp_map, frame_curr->descriptors_, matches );
+    // select the best matches        
     float min_dis = std::min_element (
                         matches.begin(), matches.end(),
                         [] ( const cv::DMatch& m1, const cv::DMatch& m2 )
     {
         return m1.distance < m2.distance;
     } )->distance;
+    
 
     match_3dpts_.clear();
     match_2dkp_index_.clear();
@@ -72,7 +74,7 @@ void VisualOdometry::featureMatching()
     cout<<"match cost time: "<<timer.elapsed() <<endl;
 }
 
-void VisualOdometry::poseEstimationPnP()
+void PoseEstimation::poseEstimationPnP()
 {
     // construct the 3d 2d observations
     vector<cv::Point3f> pts3d;
@@ -144,7 +146,7 @@ void VisualOdometry::poseEstimationPnP()
     cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
 }
 
-bool VisualOdometry::checkEstimatedPose()
+bool PoseEstimation::checkEstimatedPose()
 {
     // check if the estimated pose is good
     if ( num_inliers_ < min_inliers_ )
@@ -163,72 +165,7 @@ bool VisualOdometry::checkEstimatedPose()
     return true;
 }
 
-
-/*
-bool VisualOdometry::checkKeyFrame()
-{
-    SE3 T_r_c = ref_->T_c_w_ * T_c_w_estimated_.inverse();
-    Sophus::Vector6d d = T_r_c.log();
-    Vector3d trans = d.head<3>();
-    Vector3d rot = d.tail<3>();
-    if ( rot.norm() >key_frame_min_rot || trans.norm() >key_frame_min_trans )
-        return true;
-    return false;
-}
-
-void VisualOdometry::addKeyFrame()
-{
-    if ( map_->keyframes_.empty() )
-    {
-        // first key-frame, add all 3d points into map
-        for ( size_t i=0; i<keypoints_curr_.size(); i++ )
-        {
-            double d = curr_->findDepth ( keypoints_curr_[i] );
-            if ( d < 0 ) 
-                continue;
-            Vector3d p_world = ref_->camera_->pixel2world (
-                Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ), curr_->T_c_w_, d
-            );
-            Vector3d n = p_world - ref_->getCamCenter();
-            n.normalize();
-            MapPoint::Ptr map_point = MapPoint::createMapPoint(
-                p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
-            );
-            map_->insertMapPoint( map_point );
-        }
-    }
-    
-    map_->insertKeyFrame ( curr_ );
-    ref_ = curr_;
-}
-
-void VisualOdometry::addMapPoints()
-{
-    // add the new map points into map
-    vector<bool> matched(keypoints_curr_.size(), false); 
-    for ( int index:match_2dkp_index_ )
-        matched[index] = true;
-    for ( int i=0; i<keypoints_curr_.size(); i++ )
-    {
-        if ( matched[i] == true )   
-            continue;
-        double d = ref_->findDepth ( keypoints_curr_[i] );
-        if ( d<0 )  
-            continue;
-        Vector3d p_world = ref_->camera_->pixel2world (
-            Vector2d ( keypoints_curr_[i].pt.x, keypoints_curr_[i].pt.y ), 
-            curr_->T_c_w_, d
-        );
-        Vector3d n = p_world - ref_->getCamCenter();
-        n.normalize();
-        MapPoint::Ptr map_point = MapPoint::createMapPoint(
-            p_world, n, descriptors_curr_.row(i).clone(), curr_.get()
-        );
-        map_->insertMapPoint( map_point );
-    }
-}
-
-void VisualOdometry::optimizeMap()
+void PoseEstimation::optimizeMap()
 {
     // remove the hardly seen and no visible points 
     for ( auto iter = map_->map_points_.begin(); iter != map_->map_points_.end(); )
@@ -270,66 +207,84 @@ void VisualOdometry::optimizeMap()
     cout<<"map points: "<<map_->map_points_.size()<<endl;
 }
 
-double VisualOdometry::getViewAngle ( Frame::Ptr frame, MapPoint::Ptr point )
+double PoseEstimation::getViewAngle ( Frame::Ptr frame, MapPoint::Ptr point )
 {
     Vector3d n = point->pos_ - frame->getCamCenter();
     n.normalize();
     return acos( n.transpose()*point->norm_ );
 }
-*/
-/*
-bool VisualOdometry::addFrame ( Frame::Ptr frame )
-{
-    switch ( state_ )
-    {
-    case INITIALIZING:
-    {
-        state_ = OK;
-        curr_ = ref_ = frame;
-        // extract features from first frame and add them into map
-        extractKeyPoints();
-        computeDescriptors();
-        addKeyFrame();      // the first frame is a key-frame
-        break;
-    }
-    case OK:
-    {
-        curr_ = frame;
-        curr_->T_c_w_ = ref_->T_c_w_;
-        extractKeyPoints();
-        computeDescriptors();
-        featureMatching();
-        poseEstimationPnP();
-        if ( checkEstimatedPose() == true ) // a good estimation
-        {
-            curr_->T_c_w_ = T_c_w_estimated_;
-            optimizeMap();
-            num_lost_ = 0;
-            if ( checkKeyFrame() == true ) // is a key-frame
-            {
-                addKeyFrame();
-            }
-        }
-        else // bad estimation due to various reasons
-        {
-            num_lost_++;
-            if ( num_lost_ > max_num_lost_ )
-            {
-                state_ = LOST;
-            }
-            return false;
-        }
-        break;
-    }
-    case LOST:
-    {
-        cout<<"vo has lost."<<endl;
-        break;
-    }
-    }
 
-    return true;
+void PoseEstimation::mapInitialization()
+{
+    string map_dir_ = localization::Config::get<string> ( "map_dir_" );
+	map_->load(map_dir_);
+	if(map_->state_==EMPTY)
+	{
+		string image_database_dir = localization::Config::get<string> ( "image_database_dir" );
+		//string dir_frames_rgb = localization::Config::get<string> ( "dir_frames_rgb_" );    
+		//string dir_frames_depth = localization::Config::get<string> ( "dir_frames_depth_" );	
+		string dir_pose = localization::Config::get<string> ( "dir_pose_" );			
+		
+		const char* dir_pose_cstr = dir_pose.c_str();  //ifstream fin(const char*)
+	    ifstream fin(dir_pose_cstr);	    	//数据格式:frame_id              double[12]
+	    										//		(数字1,2,3,...)对应帧id ;	R(3x3) t(3x1) 表示该帧的相机位姿     
+		if (!fin)								
+		{
+		    cerr<<"cannot find pose file"<<endl;
+		    //return 1;
+		}
+		else//文件存在
+		{
+		   vector<Frame::Ptr> frame_ptr_vec;
+		   //读取所有的关键帧及每一帧相机位姿	
+		   while(getline(fin,temp))		//获取一行,一行代表一条位姿记录及对应关键帧id
+		   {
+		   		//对每一行数据的读入一个frame对象
+		   		Frame::Ptr frame(new Frame());
+		   		vector<double> double_vec; 
+		   		double num;
+				istringstream iss(temp);
+				iss >> frame->id_;  	//帧id
+				
+				string rgb_dir = image_database_dir+"/rgb/"+to_string(frame->id_)+".png";
+				string depth_dir = image_database_dir+"/depth/"+to_string(frame->id_)+".png";                       
+       		    frame->color_ = imread(color_dir);
+       		    frame->depth_ = imread(depth_dir);   
+        		frame->extractKeyPoints();
+        		frame->computeDescriptors();
+								
+				while(iss >> num)  		//分别将这一行数据读入						
+					double_vec.push_back(num);			
+				Eigen::Matrix3d R;
+				Eigen::Vector3d t;				
+				R(0,0)=double_vec[0];  R(0,1)=double_vec[1];  R(0,2)=double_vec[2];  t(0)=double_vec[3];
+				R(1,0)=double_vec[4];  R(1,1)=double_vec[5];  R(1,2)=double_vec[6];  t(1)=double_vec[7];
+				R(2,0)=double_vec[8];  R(2,1)=double_vec[9];  R(2,2)=double_vec[10]; t(2)=double_vec[11];
+				Sophus::SE3 T(R,t);
+				frame->T_c_w_ = T;
+				
+				frame_ptr_vec.push_back(frame);																
+		   }
+		   Frame::Ptr frame_cur,frame_ref;
+		   for (Frame::Ptr frame : frame_ptr_vec)
+		   {
+		   		if(map_->state_==EMPTY)
+		   		{
+		   			map_->addKeyFrame(frame);	//第一帧,添加所有关键点为地图点(函数addKeyFrame有处理)
+		   			map_->state_=EXSIT;
+		   			frame_cur=frame_ref=frame;
+		   		}
+		   		else
+		   		{
+		   			frame_cur=frame;
+		   			featureMatching(frame_cur, frame_ref);
+		   			map_->addKeyFrame(frame);
+		   			map_->addMapPoints( frame,match_2dkp_index_);
+		   		}
+		   		
+		   }		   
+		}           	
+	}	
 }
-*/
 
 }

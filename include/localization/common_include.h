@@ -26,6 +26,7 @@ using cv::Mat;
 #include <memory>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <set>
 #include <unordered_map>
 #include <map>

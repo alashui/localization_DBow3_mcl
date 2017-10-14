@@ -17,19 +17,23 @@ class Frame
 		unsigned long                  id_;         // id of this frame
 		double                         time_stamp_; // when it is recorded
 		SE3                            T_c_w_;      // transform from world to camera
-		Camera::Ptr                    camera_;     // Pinhole RGBD Camera model 
-		Mat                        color_, depth_; // color and depth image 
-		
-		cv::Ptr<cv::ORB> 			   orb_;  // orb detector and computer
+		Mat                        	   color_, depth_; // color and depth image 
 		std::vector<cv::KeyPoint>      keypoints_;  // key points in image
 		Mat                     	   descriptors_;  // descriptors in image
-		
+		bool                           is_key_frame_;  // whether a key-frame
+	
+	
+	
+	private:					
+		Camera::Ptr                    camera_;     // Pinhole RGBD Camera model 
+		cv::Ptr<cv::ORB> 			   orb_;  // orb detector and computer
+			
 		// parameters 
     	int num_of_features_;   // number of features
     	double scale_factor_;   // scale in image pyramid
     	int level_pyramid_;     // number of pyramid levels
 		
-		bool                           is_key_frame_;  // whether a key-frame
+
 		
 			
 		// std::vector<MapPoint*>         map_points_; // associated map points

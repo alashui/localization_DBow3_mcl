@@ -18,8 +18,8 @@ class ImageRetrieve
 		typedef shared_ptr<ImageRetrieve> Ptr;
 		enum Database_state 
 		{
-		    EMPTY=-1,
-		    EXIST=0
+		    EMPTY=0,
+		    EXIST=1
 		};
 		
 		//cv::Mat image_query;

@@ -1,26 +1,26 @@
-#ifndef VISUALODOMETRY_H
-#define VISUALODOMETRY_H
+#ifndef PoseEstimation_H
+#define PoseEstimation_H
 
 #include "localization/common_include.h"
 #include "localization/map.h"
 
-#include <opencv2/features2d/features2d.hpp>
+
 
 namespace localization 
 {
-class VisualOdometry
+class PoseEstimation
 {
 public:
-    typedef shared_ptr<VisualOdometry> Ptr;
+    typedef shared_ptr<PoseEstimation> Ptr;
     enum VOState {
         INITIALIZING=-1,
         OK=0,
         LOST
     };
     
-    VOState     state_;     // current VO status
-    Map::Ptr    map_;       // map with all frames and map points
-    
+    VOState     state_;        		// current VO status
+        
+    Map::Ptr    map_;       		// map with all frames and map points       
     Frame::Ptr  ref_;       // reference key-frame 
     Frame::Ptr  curr_;      // current frame 
      
@@ -41,27 +41,25 @@ public:
     double  map_point_erase_ratio_; // remove map point ratio
     
 public: // functions 
-    VisualOdometry();
-    ~VisualOdometry();
+    PoseEstimation();
+    ~PoseEstimation();
     
     //bool addFrame( Frame::Ptr frame );      // add a new frame 
     
 protected:  
-    // inner operation 
-    //void extractKeyPoints();
-    //void computeDescriptors(); 
-    void featureMatching();
-    void poseEstimationPnP(); 
-    //void optimizeMap();
+    // inner operation  
+    void featureMatching(); 
+    void optimizeMap();
     
-    //void addKeyFrame();
-    //void addMapPoints();
+    void addKeyFrame();
+    void addMapPoints();
     bool checkEstimatedPose(); 
-    //bool checkKeyFrame();
+    bool checkKeyFrame();    
+    double getViewAngle( Frame::Ptr frame, MapPoint::Ptr point );
     
-    //double getViewAngle( Frame::Ptr frame, MapPoint::Ptr point );
-    
+    void mapInitialization();
+    void poseEstimationPnP();
 };
 }
 
-#endif // VISUALODOMETRY_H
+#endif // PoseEstimation_H

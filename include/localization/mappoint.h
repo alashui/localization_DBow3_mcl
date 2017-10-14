@@ -14,6 +14,7 @@ public:
     unsigned long      id_;        // ID
     static unsigned long factory_id_;    // factory id
     bool        good_;      // wheter a good point 
+    
     Vector3d    pos_;       // Position in world
     Vector3d    norm_;      // Normal of viewing direction 
     Mat         descriptor_; // Descriptor for matching 
