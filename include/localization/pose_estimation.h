@@ -48,11 +48,11 @@ public: // functions
     
 protected:  
     // inner operation  
-    void featureMatching(); 
+    void featureMatching(const Frame::Ptr frame_curr,
+						 const Frame::Ptr frame_ref); 
     void optimizeMap();
     
-    void addKeyFrame();
-    void addMapPoints();
+
     bool checkEstimatedPose(); 
     bool checkKeyFrame();    
     double getViewAngle( Frame::Ptr frame, MapPoint::Ptr point );

@@ -19,11 +19,15 @@ class Map
 				EMPTY=0,
 				EXIST=1
 			};
-		MapState    state_;			//status of Map ,exist or empty
-		Map():map_state_(EMPTY) {}
+		Map_state    state_;			//status of Map ,exist or empty
+		Map():state_(EMPTY) {}
 		
 		void insertKeyFrame( Frame::Ptr frame );
 		void insertMapPoint( MapPoint::Ptr map_point );
+		void addKeyFrame(Frame::Ptr frame);
+    	void addMapPoints(const Frame::Ptr frame,
+						  const vector<int> match_2dkp_index_);
+		
 		void save(string &filename);
 		void load(string &filename);
 };

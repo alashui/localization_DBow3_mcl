@@ -6,7 +6,7 @@ add_library( localization SHARED
     map.cpp
     g2o_types.cpp
     image_retrieve.cpp
-    visual_odometry.cpp
+    pose_estimation.cpp
     
 )
 

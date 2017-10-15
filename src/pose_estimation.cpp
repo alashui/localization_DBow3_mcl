@@ -5,7 +5,7 @@
 #include <boost/timer.hpp>
 
 #include "localization/config.h"
-#include "localization/visual_odometry.h"
+#include "localization/pose_estimation.h"
 #include "localization/g2o_types.h"
 
 namespace localization
@@ -164,7 +164,7 @@ bool PoseEstimation::checkEstimatedPose()
     }
     return true;
 }
-
+/*
 void PoseEstimation::optimizeMap()
 {
     // remove the hardly seen and no visible points 
@@ -196,7 +196,7 @@ void PoseEstimation::optimizeMap()
     }
     
     if ( match_2dkp_index_.size()<100 )
-        addMapPoints();
+        map_->addMapPoints();
     if ( map_->map_points_.size() > 1000 )  
     {
         // TODO map is too large, remove some one 
@@ -206,7 +206,7 @@ void PoseEstimation::optimizeMap()
         map_point_erase_ratio_ = 0.1;
     cout<<"map points: "<<map_->map_points_.size()<<endl;
 }
-
+*/
 double PoseEstimation::getViewAngle ( Frame::Ptr frame, MapPoint::Ptr point )
 {
     Vector3d n = point->pos_ - frame->getCamCenter();
@@ -218,7 +218,7 @@ void PoseEstimation::mapInitialization()
 {
     string map_dir_ = localization::Config::get<string> ( "map_dir_" );
 	map_->load(map_dir_);
-	if(map_->state_==EMPTY)
+	if(map_->state_==Map::EMPTY)
 	{
 		string image_database_dir = localization::Config::get<string> ( "image_database_dir" );
 		//string dir_frames_rgb = localization::Config::get<string> ( "dir_frames_rgb_" );    
@@ -236,7 +236,8 @@ void PoseEstimation::mapInitialization()
 		else//文件存在
 		{
 		   vector<Frame::Ptr> frame_ptr_vec;
-		   //读取所有的关键帧及每一帧相机位姿	
+		   //读取所有的关键帧及每一帧相机位姿
+		   string temp;	
 		   while(getline(fin,temp))		//获取一行,一行代表一条位姿记录及对应关键帧id
 		   {
 		   		//对每一行数据的读入一个frame对象
@@ -247,8 +248,8 @@ void PoseEstimation::mapInitialization()
 				iss >> frame->id_;  	//帧id
 				
 				string rgb_dir = image_database_dir+"/rgb/"+to_string(frame->id_)+".png";
-				string depth_dir = image_database_dir+"/depth/"+to_string(frame->id_)+".png";                       
-       		    frame->color_ = imread(color_dir);
+				string depth_dir = image_database_dir+"/depth/"+to_string(frame->id_)+".png";       
+				frame->color_ = imread(rgb_dir);
        		    frame->depth_ = imread(depth_dir);   
         		frame->extractKeyPoints();
         		frame->computeDescriptors();
@@ -268,10 +269,10 @@ void PoseEstimation::mapInitialization()
 		   Frame::Ptr frame_cur,frame_ref;
 		   for (Frame::Ptr frame : frame_ptr_vec)
 		   {
-		   		if(map_->state_==EMPTY)
+		   		if(map_->state_==Map::EMPTY)
 		   		{
 		   			map_->addKeyFrame(frame);	//第一帧,添加所有关键点为地图点(函数addKeyFrame有处理)
-		   			map_->state_=EXSIT;
+		   			map_->state_=Map::EXIST;
 		   			frame_cur=frame_ref=frame;
 		   		}
 		   		else

@@ -14,7 +14,7 @@ class Frame
 {
 	public:
 		typedef std::shared_ptr<Frame> Ptr;
-		unsigned long                  id_;         // id of this frame
+		int                   id_;         // id of this frame
 		double                         time_stamp_; // when it is recorded
 		SE3                            T_c_w_;      // transform from world to camera
 		Mat                        	   color_, depth_; // color and depth image 
@@ -24,7 +24,7 @@ class Frame
 	
 	
 	
-	private:					
+					
 		Camera::Ptr                    camera_;     // Pinhole RGBD Camera model 
 		cv::Ptr<cv::ORB> 			   orb_;  // orb detector and computer
 			

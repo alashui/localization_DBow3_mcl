@@ -11,7 +11,7 @@ class MapPoint
 {
 public:
     typedef shared_ptr<MapPoint> Ptr;
-    unsigned long      id_;        // ID
+    int      id_;        // ID
     static unsigned long factory_id_;    // factory id
     bool        good_;      // wheter a good point 
     
