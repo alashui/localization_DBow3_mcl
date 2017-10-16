@@ -214,20 +214,17 @@ double PoseEstimation::getViewAngle ( Frame::Ptr frame, MapPoint::Ptr point )
     return acos( n.transpose()*point->norm_ );
 }
 
-void PoseEstimation::mapInitialization()
+void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map实例
 {
-    string map_dir_ = localization::Config::get<string> ( "map_dir_" );
-	map_->load(map_dir_);
+    //string map_dir = localization::Config::get<string> ( "map_dir" );
+	//map_->load(map_dir);
 	if(map_->state_==Map::EMPTY)
 	{
 		string image_database_dir = localization::Config::get<string> ( "image_database_dir" );
-		//string dir_frames_rgb = localization::Config::get<string> ( "dir_frames_rgb_" );    
-		//string dir_frames_depth = localization::Config::get<string> ( "dir_frames_depth_" );	
-		string dir_pose = localization::Config::get<string> ( "dir_pose_" );			
-		
-		const char* dir_pose_cstr = dir_pose.c_str();  //ifstream fin(const char*)
-	    ifstream fin(dir_pose_cstr);	    	//数据格式:frame_id              double[12]
-	    										//		(数字1,2,3,...)对应帧id ;	R(3x3) t(3x1) 表示该帧的相机位姿     
+		string dir_pose(image_database_dir +  "/pose.txt");				
+
+	    ifstream fin(dir_pose);	    	//数据格式:frame_id              double[12]
+	    								//		(数字1,2,3,...)对应帧id ;	R(3x3) t(3x1) 表示该帧的相机位姿     
 		if (!fin)								
 		{
 		    cerr<<"cannot find pose file"<<endl;
@@ -238,6 +235,7 @@ void PoseEstimation::mapInitialization()
 		   vector<Frame::Ptr> frame_ptr_vec;
 		   //读取所有的关键帧及每一帧相机位姿
 		   string temp;	
+
 		   while(getline(fin,temp))		//获取一行,一行代表一条位姿记录及对应关键帧id
 		   {
 		   		//对每一行数据的读入一个frame对象
@@ -246,13 +244,16 @@ void PoseEstimation::mapInitialization()
 		   		double num;
 				istringstream iss(temp);
 				iss >> frame->id_;  	//帧id
-				
-				string rgb_dir = image_database_dir+"/rgb/"+to_string(frame->id_)+".png";
-				string depth_dir = image_database_dir+"/depth/"+to_string(frame->id_)+".png";       
+
+			
+				string rgb_dir = image_database_dir+"/rgb/rgb"+to_string(frame->id_)+".png";
+				string depth_dir = image_database_dir+"/depth/depth"+to_string(frame->id_)+".png";     
 				frame->color_ = imread(rgb_dir);
-       		    frame->depth_ = imread(depth_dir);   
-        		frame->extractKeyPoints();
-        		frame->computeDescriptors();
+	       		frame->depth_ = imread(depth_dir);
+
+  				cout<<"frame"<<frame->id_<<endl;
+				frame->extractKeyPoints();
+				frame->computeDescriptors();
 								
 				while(iss >> num)  		//分别将这一行数据读入						
 					double_vec.push_back(num);			
@@ -262,30 +263,42 @@ void PoseEstimation::mapInitialization()
 				R(1,0)=double_vec[4];  R(1,1)=double_vec[5];  R(1,2)=double_vec[6];  t(1)=double_vec[7];
 				R(2,0)=double_vec[8];  R(2,1)=double_vec[9];  R(2,2)=double_vec[10]; t(2)=double_vec[11];
 				Sophus::SE3 T(R,t);
-				frame->T_c_w_ = T;
-				
+				frame->T_c_w_ = T;				
 				frame_ptr_vec.push_back(frame);																
 		   }
+
 		   Frame::Ptr frame_cur,frame_ref;
 		   for (Frame::Ptr frame : frame_ptr_vec)
 		   {
+cout<<"db 1"<<endl;
 		   		if(map_->state_==Map::EMPTY)
 		   		{
+cout<<"db 2"<<endl;
 		   			map_->addKeyFrame(frame);	//第一帧,添加所有关键点为地图点(函数addKeyFrame有处理)
+cout<<"db 3"<<endl;
 		   			map_->state_=Map::EXIST;
 		   			frame_cur=frame_ref=frame;
 		   		}
 		   		else
 		   		{
-		   			frame_cur=frame;
+cout<<"db 4"<<endl;		   	
+					frame_cur=frame;
 		   			featureMatching(frame_cur, frame_ref);
+cout<<"db 5"<<endl;
 		   			map_->addKeyFrame(frame);
 		   			map_->addMapPoints( frame,match_2dkp_index_);
 		   		}
 		   		
 		   }		   
 		}           	
-	}	
+	}
+cout<<"db 4"<<endl;	
 }
 
+
+
 }
+
+
+
+

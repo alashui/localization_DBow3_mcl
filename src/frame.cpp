@@ -7,7 +7,10 @@ namespace localization
 Frame::Frame()
 : id_(-1), time_stamp_(-1), camera_(nullptr), is_key_frame_(false)
 {
-
+	num_of_features_    = Config::get<int> ( "number_of_features" );
+    scale_factor_       = Config::get<double> ( "scale_factor" );
+    level_pyramid_      = Config::get<int> ( "level_pyramid" );
+    orb_ = cv::ORB::create ( num_of_features_, scale_factor_, level_pyramid_ );
 }
 
 Frame::Frame ( long id, double time_stamp, SE3 T_c_w, Camera::Ptr camera, Mat color, Mat depth )
@@ -40,7 +43,7 @@ void Frame::computeDescriptors()
 {
 	boost::timer timer;
 	orb_->compute ( color_, keypoints_, descriptors_ );
-	cout<<"extract keypoints cost time: "<<timer.elapsed() <<endl;
+	cout<<"extract computeDescriptors cost time: "<<timer.elapsed() <<endl;
 }
 
 
@@ -48,15 +51,24 @@ void Frame::computeDescriptors()
 
 double Frame::findDepth ( const cv::KeyPoint& kp )
 {
+cout<<"db 2.0001"<<endl;
     int x = cvRound(kp.pt.x);
     int y = cvRound(kp.pt.y);
+cout<<"db 2.0002"<<endl;
     ushort d = depth_.ptr<ushort>(y)[x];
+cout<<"db 2.00021"<<endl;
     if ( d!=0 )
     {
-        return double(d)/camera_->depth_scale_;
+cout<<"db 2.00022"<<endl;
+		d=double(d);
+cout<<"db 2.000221"<<endl;
+        return d/camera_->depth_scale_;
+cout<<"db 2.0003"<<endl;
     }
+
     else 
     {
+cout<<"db 2.0004"<<endl;
         // check the nearby points 
         int dx[4] = {-1,0,1,0};
         int dy[4] = {0,-1,0,1};

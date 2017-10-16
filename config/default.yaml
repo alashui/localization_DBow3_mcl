@@ -7,12 +7,15 @@ project_dir: /home/robot/a_myfile/localization
 
 # data
 # the tum dataset directory
-image_database_dir: /home/robot/a_myfile/data/image_data_taozihu/222
-image_query_dir: /home/robot/a_myfile/data/image_query/taozihu1
+image_database_dir: /home/user/a_myfile/slam_data/image_data_taozihu/222
+image_query_dir: /home/user/a_myfile/slam_data/image_query/taozihu1
 
 # the vocabulary directory
-vocabulary_dir: /home/robot/a_myfile/data/vocabulary/orbvoc.dbow3
-database_dir:/home/robot/a_myfile/data/database/database1.yml.gz
+vocabulary_dir: /home/user/a_myfile/slam_data/vocabulary/orbvoc.dbow3
+database_dir:/home/user/a_myfile/slam_data/database/database1.yml.gz
+
+#the instance of Map directory
+map_dir:/home/user/a_myfile/slam_data/map/map.yml
 
 # camera intrinsics
 # fr1

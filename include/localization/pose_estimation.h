@@ -46,7 +46,7 @@ public: // functions
     
     //bool addFrame( Frame::Ptr frame );      // add a new frame 
     
-protected:  
+//protected:  
     // inner operation  
     void featureMatching(const Frame::Ptr frame_curr,
 						 const Frame::Ptr frame_ref); 

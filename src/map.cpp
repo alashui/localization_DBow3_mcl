@@ -35,16 +35,22 @@ void Map::addKeyFrame(Frame::Ptr frame)
         // first key-frame, add all 3d points into map
         for ( size_t i=0; i < frame->keypoints_.size(); i++ )
         {
+cout<<"db 2.0"<<endl;
             double d = frame->findDepth ( frame->keypoints_[i] );
+cout<<"db 2.01"<<endl;
             if ( d < 0 ) 
                 continue;
+cout<<"db 2.02"<<endl;
             Vector3d p_world = frame->camera_->pixel2world (
-                Vector2d ( frame->keypoints_[i].pt.x, frame->keypoints_[i].pt.y ), frame->T_c_w_, d   );           
+                Vector2d ( frame->keypoints_[i].pt.x, frame->keypoints_[i].pt.y ), frame->T_c_w_, d   );
+cout<<"db 2.1"<<endl;           
             Vector3d n = p_world - frame->getCamCenter();
             n.normalize();
             MapPoint::Ptr map_point = MapPoint::createMapPoint(  p_world, n,
               				 frame->descriptors_.row(i).clone(), frame.get()    );
+cout<<"db 2.2"<<endl;
             insertMapPoint( map_point );
+cout<<"db 2.3"<<endl;
         }
     }
     
@@ -77,7 +83,7 @@ void Map::addMapPoints( const Frame::Ptr frame,
 }
 
 
-void Map::save(string &filename)    将map的实例保存到文件(只保存重要的数据)                 
+void Map::save(string &filename)    //将map的实例保存到文件(只保存重要的数据)                 
 {			
 	cv::FileStorage fs(filename, FileStorage::WRITE);    //保存为yml格式
 	
