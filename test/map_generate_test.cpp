@@ -15,7 +15,8 @@ int main( int argc, char** argv )
 	localization::PoseEstimation pose_estimation;
     
 	pose_estimation.mapInitialization();
-	pose_estimation.map_->save(map_dir);
+	//pose_estimation.map_->save(map_dir);
+	//pose_estimation.map_->load(map_dir);
 
 
 

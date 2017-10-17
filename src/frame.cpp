@@ -5,7 +5,7 @@
 namespace localization
 {
 Frame::Frame()
-: id_(-1), time_stamp_(-1), camera_(nullptr), is_key_frame_(false)
+: id_(-1), time_stamp_(-1), camera_(new Camera), is_key_frame_(false)
 {
 	num_of_features_    = Config::get<int> ( "number_of_features" );
     scale_factor_       = Config::get<double> ( "scale_factor" );
@@ -51,24 +51,18 @@ void Frame::computeDescriptors()
 
 double Frame::findDepth ( const cv::KeyPoint& kp )
 {
-cout<<"db 2.0001"<<endl;
     int x = cvRound(kp.pt.x);
     int y = cvRound(kp.pt.y);
-cout<<"db 2.0002"<<endl;
     ushort d = depth_.ptr<ushort>(y)[x];
-cout<<"db 2.00021"<<endl;
+
     if ( d!=0 )
     {
-cout<<"db 2.00022"<<endl;
-		d=double(d);
-cout<<"db 2.000221"<<endl;
+		d=double(d);	
         return d/camera_->depth_scale_;
-cout<<"db 2.0003"<<endl;
     }
 
     else 
     {
-cout<<"db 2.0004"<<endl;
         // check the nearby points 
         int dx[4] = {-1,0,1,0};
         int dy[4] = {0,-1,0,1};
@@ -80,8 +74,7 @@ cout<<"db 2.0004"<<endl;
                 return double(d)/camera_->depth_scale_;
             }
         }
-    }
-    return -1.0;
+    }    
 }
 
 

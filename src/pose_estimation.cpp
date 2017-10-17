@@ -270,21 +270,18 @@ void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map�
 		   Frame::Ptr frame_cur,frame_ref;
 		   for (Frame::Ptr frame : frame_ptr_vec)
 		   {
-cout<<"db 1"<<endl;
+
 		   		if(map_->state_==Map::EMPTY)
 		   		{
-cout<<"db 2"<<endl;
 		   			map_->addKeyFrame(frame);	//第一帧,添加所有关键点为地图点(函数addKeyFrame有处理)
-cout<<"db 3"<<endl;
 		   			map_->state_=Map::EXIST;
 		   			frame_cur=frame_ref=frame;
 		   		}
 		   		else
-		   		{
-cout<<"db 4"<<endl;		   	
+		   		{		   	
 					frame_cur=frame;
 		   			featureMatching(frame_cur, frame_ref);
-cout<<"db 5"<<endl;
+
 		   			map_->addKeyFrame(frame);
 		   			map_->addMapPoints( frame,match_2dkp_index_);
 		   		}
@@ -292,7 +289,7 @@ cout<<"db 5"<<endl;
 		   }		   
 		}           	
 	}
-cout<<"db 4"<<endl;	
+	cout<<"map initialization completed."<<endl;	
 }
 
 

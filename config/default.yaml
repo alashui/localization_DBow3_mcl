@@ -15,8 +15,8 @@ vocabulary_dir: /home/user/a_myfile/slam_data/vocabulary/orbvoc.dbow3
 database_dir:/home/user/a_myfile/slam_data/database/database1.yml.gz
 
 #the instance of Map directory
-map_dir:/home/user/a_myfile/slam_data/map/map.yml
-
+#map_dir:/home/user/a_myfile/slam_data/map/map.yml
+map_dir:/media/user/BADAEEBBDAEE72D5/map/map.yml
 # camera intrinsics
 # fr1
 camera.fx: 517.3
