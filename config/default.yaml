@@ -12,7 +12,11 @@ image_query_dir: /home/user/a_myfile/slam_data/image_query/taozihu1
 
 # the vocabulary directory
 vocabulary_dir: /home/user/a_myfile/slam_data/vocabulary/orbvoc.dbow3
-database_dir:/home/user/a_myfile/slam_data/database/database1.yml.gz
+database_dir:/home/user/a_myfile/slam_data/database/database.yml.gz
+db_frame_id_dir:/home/user/a_myfile/slam_data/database/db_frame_id_.txt             
+# EntryId与frame_id_的对应关系
+
+
 
 #the instance of Map directory
 #map_dir:/home/user/a_myfile/slam_data/map/map.yml

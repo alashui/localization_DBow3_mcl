@@ -8,10 +8,11 @@
 #include "localization/config.h"
 
 #include "localization/frame.h"
+#include "localization/map.h"
 
 namespace localization
 {
-
+class Map;
 class ImageRetrieve
 {
     public:
@@ -22,10 +23,19 @@ class ImageRetrieve
 		    EXIST=1
 		};
 		
-		//cv::Mat image_query;
+		//给定frame和map,运行retrieve_result(),得到result;
 		Frame::Ptr frame_query_;
-		DBoW3::QueryResults result_;
-					    
+		Map::Ptr map_;	
+		DBoW3::QueryResults result_;   //DBoW3::QueryResults的数据成员std::vector<Result>
+									   //DBoW3::Result 的数据成员public: EntryId Id; double Score;	
+									   		//EntryId为unsigned int	的宏定义		
+						 
+		unordered_map< unsigned int, int > EntryId_frame_id_;  //将database中的EntryId和frame_id一一对应，
+					    							  //便于从database.query()后的ret.Id得到frame_id
+		double result_score_;
+		int result_frame_id_;			    							  
+					    							  
+					    							  
 		ImageRetrieve();
 		~ImageRetrieve();
         

@@ -151,7 +151,7 @@ void Map::save(string &filename)    //将map的实例保存到文件(只保存�
 
 void Map::load(string &filename)	//读取太慢，，放弃。	
 {
-
+/*
 	cout<<"map load..."<<endl;	
 
 	cv::FileStorage fs(filename,FileStorage::READ);  
@@ -186,9 +186,7 @@ cout <<"db 3" <<endl;
 		cout<<"map load done. "<<endl;				
 	}
 	fs.release();		
-		
-}		
-		
+
 /*		
 		    // read data using operator []  
         cv::FileStorage fs("test.yml", FileStorage::READ);  
@@ -267,6 +265,13 @@ cout <<"db 3" <<endl;
 			//存储描述子
 			fs << "frame_descriptors_" << iter->second->descriptors_;
 */		
+
+
+
+		
+}		
+		
+
 
 
 
