@@ -24,13 +24,11 @@ PoseEstimation::PoseEstimation() :
     
 }
 
-PoseEstimation::~PoseEstimation()
-{
+PoseEstimation::~PoseEstimation(){}
 
-}
 //匹配当前帧和参考帧,实际处理是匹配当前帧的特征点和出现在参考帧中的地图点
-void PoseEstimation::featureMatching(const Frame::Ptr frame_curr,
-									 const Frame::Ptr frame_ref)
+void PoseEstimation::featureMatching( const Frame::Ptr frame_curr,
+									  const Frame::Ptr frame_ref   )
 {
     boost::timer timer;
     vector<cv::DMatch> matches;
@@ -45,12 +43,11 @@ void PoseEstimation::featureMatching(const Frame::Ptr frame_curr,
         {
             // add to candidate 
             p->visible_times_++;
-            candidate.push_back( p );
+            candidate.push_back( p );   
             desp_map.push_back( p->descriptor_ );
         }
     }
-    
-    matcher_flann_.match ( desp_map, frame_curr->descriptors_, matches );
+    matcher_flann_.match ( desp_map, frame_curr->descriptors_, matches );  
     // select the best matches        
     float min_dis = std::min_element (
                         matches.begin(), matches.end(),
@@ -58,7 +55,7 @@ void PoseEstimation::featureMatching(const Frame::Ptr frame_curr,
     {
         return m1.distance < m2.distance;
     } )->distance;
-    
+  
 
     match_3dpts_.clear();
     match_2dkp_index_.clear();
@@ -102,14 +99,17 @@ void PoseEstimation::poseEstimationPnP()
                            SO3 ( rvec.at<double> ( 0,0 ), rvec.at<double> ( 1,0 ), rvec.at<double> ( 2,0 ) ),
                            Vector3d ( tvec.at<double> ( 0,0 ), tvec.at<double> ( 1,0 ), tvec.at<double> ( 2,0 ) )
                        );
-
+                                       
     // using bundle adjustment to optimize the pose
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,2>> Block;
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,3>> Block;
     Block::LinearSolverType* linearSolver = new g2o::LinearSolverDense<Block::PoseMatrixType>();
+    //Block::LinearSolverType* linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>();
     Block* solver_ptr = new Block ( linearSolver );
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );
+    //g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton ( solver_ptr );
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm ( solver );
+ 
 
     g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
     pose->setId ( 0 );
@@ -117,11 +117,10 @@ void PoseEstimation::poseEstimationPnP()
         T_c_w_estimated_.rotation_matrix(), T_c_w_estimated_.translation()
     ));
     optimizer.addVertex ( pose );
-
-    // edges
+    // edges	 
     for ( int i=0; i<inliers.rows; i++ )
     {
-        int index = inliers.at<int> ( i,0 );
+        int index = inliers.at<int> ( i,0 );  
         // 3D -> 2D projection
         EdgeProjectXYZ2UVPoseOnly* edge = new EdgeProjectXYZ2UVPoseOnly();
         edge->setId ( i );
@@ -132,17 +131,17 @@ void PoseEstimation::poseEstimationPnP()
         edge->setInformation ( Eigen::Matrix2d::Identity() );
         optimizer.addEdge ( edge );
         // set the inlier map points 
-        match_3dpts_[index]->matched_times_++;
+        //match_3dpts_[index]->matched_times_++;
     }
 
     optimizer.initializeOptimization();
-    optimizer.optimize ( 10 );
+    optimizer.optimize (10); 
 
     T_c_w_estimated_ = SE3 (
         pose->estimate().rotation(),
         pose->estimate().translation()
     );
-    
+
     cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
 }
 
@@ -218,6 +217,7 @@ void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map�
 {
     //string map_dir = localization::Config::get<string> ( "map_dir" );
 	//map_->load(map_dir);
+	cout<<"initializing map "<<endl;
 	if(map_->state_==Map::EMPTY)
 	{
 		string image_database_dir = localization::Config::get<string> ( "image_database_dir" );
@@ -232,7 +232,7 @@ void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map�
 		}
 		else//文件存在
 		{
-		   vector<Frame::Ptr> frame_ptr_vec;
+		   //vector<Frame::Ptr> frame_ptr_vec;
 		   //读取所有的关键帧及每一帧相机位姿
 		   string temp;	
 
@@ -264,9 +264,10 @@ void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map�
 				R(2,0)=double_vec[8];  R(2,1)=double_vec[9];  R(2,2)=double_vec[10]; t(2)=double_vec[11];
 				Sophus::SE3 T(R,t);
 				frame->T_c_w_ = T;				
-				frame_ptr_vec.push_back(frame);																
+				//frame_ptr_vec.push_back(frame);
+				map_->insertKeyFrame ( frame );																
 		   }
-
+/*
 		   Frame::Ptr frame_cur,frame_ref;
 		   for (Frame::Ptr frame : frame_ptr_vec)
 		   {
@@ -286,7 +287,7 @@ void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map�
 		   			map_->addMapPoints( frame,match_2dkp_index_);
 		   		}
 		   		
-		   }		   
+		   }*/		   
 		}           	
 	}
 	cout<<"map initialization completed."<<endl;	

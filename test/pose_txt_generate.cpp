@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 	{
 	   string temp;	
 	   int num_line=0;
-	   while(getline(fin,temp))		//获取一行,一行数据格式为  VERTEX_SE3:QUAT 1 0 0 0 0 0 0 1  
+	   while(getline(fin,temp))		//获取一行,一行数据格式为  VERTEX_SE3:QUAT 1   0 0 0 0 0 0 1  
 										//八位数字分别表示 x y z qx qy qz qw(前三位为位置，后四位为四元数表示的旋转角)
 	   {	
 	   	//对每一行数据的读入

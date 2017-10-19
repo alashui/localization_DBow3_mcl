@@ -21,7 +21,8 @@ include_directories( ${Sophus_INCLUDE_DIRS} )
 # G2O
 find_package( G2O REQUIRED )
 include_directories( ${G2O_INCLUDE_DIRS} )
-
+find_package( CSparse REQUIRED )
+include_directories(${CSPARSE_INCLUDE_DIR})
 # dbow3 
 #set( DBoW3_INCLUDE_DIRS "/usr/local/include" )
 #set( DBoW3_LIBS "/usr/local/lib/libDBoW3.a" )
@@ -32,7 +33,8 @@ include_directories( ${DBoW3_INCLUDE_DIRS} )
 set( THIRD_PARTY_LIBS 
     ${OpenCV_LIBS}
     ${Sophus_LIBRARIES}
-    g2o_core g2o_stuff g2o_types_sba
+    ${CSPARSE_LIBRARY}
+    g2o_core g2o_stuff g2o_types_sba g2o_csparse_extension 
    )
 ############### source and test ######################
 include_directories( ${PROJECT_SOURCE_DIR}/include )

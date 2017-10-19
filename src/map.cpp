@@ -83,7 +83,8 @@ void Map::save(string &filename)    //将map的实例保存到文件(只保存�
 
 	cv::FileStorage fs(filename, FileStorage::WRITE);    //保存为yml格式
 	//采用cv::mat的方式存储mappoint数据量超大	,只存keyframes数据
-	
+
+/*	
 	//存储map_points_
 	vector<int>point_id_all_vec;
 	for ( auto iter =map_points_.begin(); iter !=map_points_.end();iter++ )
@@ -101,7 +102,7 @@ void Map::save(string &filename)    //将map的实例保存到文件(只保存�
 	}
 	cv::Mat cvMat_point_id(point_id_all_vec);
 	fs << "mappoint_id_all"<<cvMat_point_id;
-	
+*/	
 	
 	
 	//存储keyframes_

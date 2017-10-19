@@ -17,11 +17,6 @@ class ImageRetrieve
 {
     public:
 		typedef shared_ptr<ImageRetrieve> Ptr;
-		enum Database_state 
-		{
-		    EMPTY=0,
-		    EXIST=1
-		};
 		
 		//给定frame和map,运行retrieve_result(),得到result;
 		Frame::Ptr frame_query_;
@@ -40,12 +35,13 @@ class ImageRetrieve
 		~ImageRetrieve();
         
 		void create_database();
+		void read_db_frame_id_();
+		void databaseInit();
 		void retrieve_result();
         void setResultNum(int num){num_result_=num;}
         
     private:
 		DBoW3::Database database_;		
-		Database_state state_;        //数据库存在状态
 		int num_result_;	
 
 };
