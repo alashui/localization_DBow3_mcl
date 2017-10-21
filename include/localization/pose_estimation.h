@@ -48,7 +48,7 @@ public: // functions
     
 //protected:  
     // inner operation  
-    void featureMatching(const Frame::Ptr frame_curr,
+    bool featureMatching(const Frame::Ptr frame_curr,
 						 const Frame::Ptr frame_ref); 
     void optimizeMap();
     

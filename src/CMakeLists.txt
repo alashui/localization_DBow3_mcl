@@ -23,3 +23,6 @@ target_link_libraries( localization
 
 #add_executable( image_retrieve image_retrieve.cpp )
 #target_link_libraries( image_retrieve localization ${OpenCV_LIBS} ${DBoW3_LIBS} )
+
+
+

@@ -27,27 +27,35 @@ PoseEstimation::PoseEstimation() :
 PoseEstimation::~PoseEstimation(){}
 
 //匹配当前帧和参考帧,实际处理是匹配当前帧的特征点和出现在参考帧中的地图点
-void PoseEstimation::featureMatching( const Frame::Ptr frame_curr,
+bool PoseEstimation::featureMatching( const Frame::Ptr frame_curr,
 									  const Frame::Ptr frame_ref   )
 {
-    boost::timer timer;
+    boost::timer timer;   
     vector<cv::DMatch> matches;
+              
     // select the candidates in map 
     Mat desp_map;
     vector<MapPoint::Ptr> candidate;
     for ( auto& allpoints: map_->map_points_ )  //筛选出属于参考帧的地图点
     {
-        MapPoint::Ptr& p = allpoints.second;
-        // check if p in curr frame image 
+        MapPoint::Ptr& p = allpoints.second; 
+        // check if p in curr frame image        
+        
         if ( frame_ref->isInFrame(p->pos_) )
         {
             // add to candidate 
-            p->visible_times_++;
+            p->visible_times_++;    
             candidate.push_back( p );   
             desp_map.push_back( p->descriptor_ );
         }
+    }   
+       
+    matcher_flann_.match ( desp_map, frame_curr->descriptors_, matches ); 
+	if ( matches.size() < 10)     
+	{	
+		cout<< "matches too small:" <<matches.size()<<endl;
+		return 0;     
     }
-    matcher_flann_.match ( desp_map, frame_curr->descriptors_, matches );  
     // select the best matches        
     float min_dis = std::min_element (
                         matches.begin(), matches.end(),
@@ -56,17 +64,24 @@ void PoseEstimation::featureMatching( const Frame::Ptr frame_curr,
         return m1.distance < m2.distance;
     } )->distance;
   
-
+ 
     match_3dpts_.clear();
     match_2dkp_index_.clear();
     for ( cv::DMatch& m : matches )
-    {
+    {		//描述子之间的距离大于两倍最小距离时,认为是误匹配(match_ratio_=2)
         if ( m.distance < max<float> ( min_dis*match_ratio_, 30.0 ) )
-        {
+        {	//有时最小距离太小,设置一个经验值30为下限
             match_3dpts_.push_back( candidate[m.queryIdx] );
             match_2dkp_index_.push_back( m.trainIdx );
-        }
+        }        
     }
+
+    if(match_3dpts_.size() <10)
+	{
+		cout<<"good matches too small: "<< match_3dpts_.size() <<endl;
+		return 0;			
+	}
+
     cout<<"good matches: "<<match_3dpts_.size() <<endl;
     cout<<"match cost time: "<<timer.elapsed() <<endl;
 }
@@ -84,8 +99,9 @@ void PoseEstimation::poseEstimationPnP()
     for ( MapPoint::Ptr pt:match_3dpts_ )
     {
         pts3d.push_back( pt->getPositionCV() );
+        
     }
-
+ 	
     Mat K = ( cv::Mat_<double> ( 3,3 ) <<
               ref_->camera_->fx_, 0, ref_->camera_->cx_,
               0, ref_->camera_->fy_, ref_->camera_->cy_,
@@ -93,6 +109,8 @@ void PoseEstimation::poseEstimationPnP()
             );
     Mat rvec, tvec, inliers;
     cv::solvePnPRansac ( pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers );
+    
+    
     num_inliers_ = inliers.rows;
     cout<<"pnp inliers: "<<num_inliers_<<endl;
     T_c_w_estimated_ = SE3 (
@@ -137,13 +155,17 @@ void PoseEstimation::poseEstimationPnP()
     optimizer.initializeOptimization();
     optimizer.optimize (10); 
 
-    T_c_w_estimated_ = SE3 (
+    T_c_w_estimated_ = SE3 (    
         pose->estimate().rotation(),
-        pose->estimate().translation()
+        pose->estimate().translation()        
     );
 
-    cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
+//    cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
+
 }
+
+
+
 
 bool PoseEstimation::checkEstimatedPose()
 {
@@ -163,6 +185,7 @@ bool PoseEstimation::checkEstimatedPose()
     }
     return true;
 }
+
 /*
 void PoseEstimation::optimizeMap()
 {
@@ -263,7 +286,7 @@ void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map�
 				R(1,0)=double_vec[4];  R(1,1)=double_vec[5];  R(1,2)=double_vec[6];  t(1)=double_vec[7];
 				R(2,0)=double_vec[8];  R(2,1)=double_vec[9];  R(2,2)=double_vec[10]; t(2)=double_vec[11];
 				Sophus::SE3 T(R,t);
-				frame->T_c_w_ = T;				
+				frame->T_c_w_ = T.inverse();				
 				//frame_ptr_vec.push_back(frame);
 				map_->insertKeyFrame ( frame );																
 		   }
