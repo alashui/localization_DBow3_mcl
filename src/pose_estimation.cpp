@@ -290,7 +290,8 @@ void PoseEstimation::mapInitialization()  //根据pose.txt文件生成一个Map�
 				//frame_ptr_vec.push_back(frame);
 				map_->insertKeyFrame ( frame );																
 		   }
-/*
+		   
+		/*
 		   Frame::Ptr frame_cur,frame_ref;
 		   for (Frame::Ptr frame : frame_ptr_vec)
 		   {

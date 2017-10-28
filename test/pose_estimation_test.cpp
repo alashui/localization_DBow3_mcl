@@ -13,7 +13,7 @@ int main( int argc, char** argv )
         return 1;
     }
     
-    
+    /***初始化***/
 	cout<<"initializing... "<<endl;
     localization::Config::setParameterFile ( argv[1] );    
     string map_dir = localization::Config::get<string> ( "map_dir" );
@@ -27,19 +27,26 @@ int main( int argc, char** argv )
     localization::ImageRetrieve image_retrieve;
     image_retrieve.map_ = pose_estimation.map_;  //数据库为地图中的关键帧
     image_retrieve.databaseInit(); 
-    int num_result=20;
+    int num_result=30;
     image_retrieve.setResultNum(num_result);
     
     cout<<"initialization complete. "<<endl;
-               
+    
+    
+    
+    
+    
+    /***根据输入的图像计算当前位姿***/           
     //for ( int i=0; i<1; i++ )
     //{	 
-        //image_retrieve.frame_query_=localization::Frame::createFrame();//不需要这句,frame_query_已经构造过
+
      //   string color_path = image_query_dir+"/"+to_string(i+1)+".png"; 
      //   string depth_path = image_query_dir+"/"+to_string(i+1)+".png"; 
      
         string color_path = image_query_dir+"/rgb260.png"; 
-        string depth_path = image_query_dir+"/depth260.png";                   
+        string depth_path = image_query_dir+"/depth260.png";  
+        
+                         
         image_retrieve.frame_query_->color_ = imread(color_path);
         image_retrieve.frame_query_->depth_ = imread(depth_path);   
         image_retrieve.frame_query_->extractKeyPoints();
@@ -66,7 +73,7 @@ int main( int argc, char** argv )
         {
         	PoseResult pose_result;
         	SE3 T_temp;
-        	pose_estimation.T_c_w_estimated_ = T_temp;
+        	pose_estimation.T_c_w_estimated_ = T_temp;		//对上一次的结果清零
         	
         	pose_result.frame_id = image_retrieve.EntryId_frame_id_[image_retrieve.result_[k].Id];        	
         	pose_result.score = image_retrieve.result_[k].Score;
@@ -96,7 +103,6 @@ int main( int argc, char** argv )
 		        	Vector2d ( pose_estimation.ref_->keypoints_[i].pt.x, pose_estimation.ref_->keypoints_[i].pt.y ), 
 		        		pose_estimation.ref_->T_c_w_, d   );
 
-
 		                      
 		        Vector3d n;// = p_world - pose_estimation.ref_->getCamCenter();
 		        n.normalize();
@@ -123,6 +129,8 @@ int main( int argc, char** argv )
 			
 			pose_result.theta= acos(0.5*((Twc.matrix()(0,0)+Twc.matrix()(1,1)+Twc.matrix()(2,2))-1)) ;
 			pose_result_vec.push_back(pose_result);
+
+
 			/*
 			center.x =500+Twc.matrix()(0,3)*10;
 			center.y =500+Twc.matrix()(2,3)*10;  
@@ -138,6 +146,7 @@ int main( int argc, char** argv )
 										
 		}
 		
+		/***输出结果***/
 		cout <<"result"<<endl;
 		for(int k=0; k<num_result; k++)
 		{
@@ -245,52 +254,117 @@ result 19:   frame_id: 267    score: 0.0186977   x:9.99037   y:2.99555   theta:2
 
 result  for rgb2.png 
 
-result 0:   frame_id: 1    score: 0.144893   x:0.000482244   y:0.0234564   theta:0.028621
-result 1:   frame_id: 477    score: 0.11729   x:0.0378861   y:0.0749989   theta:0.0359883
-result 2:   frame_id: 475    score: 0.108709   x:0.0195725   y:0.00706001   theta:0.0421862
-result 3:   frame_id: 4    score: 0.108444   x:0.0272674   y:0.0527278   theta:0.0332201
-result 4:   frame_id: 3    score: 0.107565   x:0.0118323   y:0.0450191   theta:0.0297721
-result 5:   frame_id: 478    score: 0.0983268   x:0.0470925   y:0.0818096   theta:0.0318857
-result 6:   frame_id: 476    score: 0.0972937   x:0.0217826   y:0.00455701   theta:0.0367172
-result 7:   frame_id: 6    score: 0.0917573   x:-1527.85   y:-9417.39   theta:2.73811
-result 8:   frame_id: 474    score: 0.0913623   x:-0.0314661   y:0.00241921   theta:0.0312285
-result 9:   frame_id: 479    score: 0.0876875   x:-1.22341   y:8.21544   theta:3.1272
-result 10:   frame_id: 5    score: 0.0851114   x:0.0177218   y:0.0872163   theta:0.0342836
-result 11:   frame_id: 482    score: 0.0825751   x:-1.21187   y:8.55739   theta:3.13638
-result 12:   frame_id: 480    score: 0.073984   x:-1.26003   y:8.1173   theta:3.12611
-result 13:   frame_id: 471    score: 0.0738817   x:0.0141057   y:-0.0605316   theta:0.0504018
-result 14:   frame_id: 7    score: 0.0703707   x:0.26556   y:-0.159435   theta:0.0898385
-result 15:   frame_id: 481    score: 0.0679087   x:0.885976   y:9.03687   theta:3.12507
-result 16:   frame_id: 469    score: 0.0671866   x:-323377   y:-353985   theta:0.803534
-result 17:   frame_id: 462    score: 0.0662981   x:0.0528013   y:-0.569841   theta:0.0689776
-result 18:   frame_id: 8    score: 0.064611   x:0.206035   y:-0.144628   theta:0.0824043
-result 19:   frame_id: 472    score: 0.0642401   x:86209.5   y:5929.47   theta:2.90297
+result 0:    frame_id: 1      score: 0.144893    x:0.000482244   y:0.0234564   theta:0.028621
+result 1:    frame_id: 477    score: 0.11729     x:0.0378861     y:0.0749989   theta:0.0359883
+result 2:    frame_id: 475    score: 0.108709    x:0.0195725     y:0.00706001  theta:0.0421862
+result 3:    frame_id: 4      score: 0.108444    x:0.0272674     y:0.0527278   theta:0.0332201
+result 4:    frame_id: 3      score: 0.107565    x:0.0118323     y:0.0450191   theta:0.0297721
+result 5:    frame_id: 478    score: 0.0983268   x:0.0470925     y:0.0818096   theta:0.0318857
+result 6:    frame_id: 476    score: 0.0972937   x:0.0217826     y:0.00455701  theta:0.0367172
+result 7:    frame_id: 6      score: 0.0917573   x:-1527.85      y:-9417.39    theta:2.73811
+result 8:    frame_id: 474    score: 0.0913623   x:-0.0314661    y:0.00241921  theta:0.0312285
+result 9:    frame_id: 479    score: 0.0876875   x:-1.22341      y:8.21544     theta:3.1272
+result 10:   frame_id: 5      score: 0.0851114   x:0.0177218     y:0.0872163   theta:0.0342836
+result 11:   frame_id: 482    score: 0.0825751   x:-1.21187      y:8.55739     theta:3.13638
+result 12:   frame_id: 480    score: 0.073984    x:-1.26003      y:8.1173      theta:3.12611
+result 13:   frame_id: 471    score: 0.0738817   x:0.0141057     y:-0.0605316  theta:0.0504018
+result 14:   frame_id: 7      score: 0.0703707   x:0.26556       y:-0.159435   theta:0.0898385
+result 15:   frame_id: 481    score: 0.0679087   x:0.885976      y:9.03687     theta:3.12507
+result 16:   frame_id: 469    score: 0.0671866   x:-323377       y:-353985     theta:0.803534
+result 17:   frame_id: 462    score: 0.0662981   x:0.0528013     y:-0.569841   theta:0.0689776
+result 18:   frame_id: 8      score: 0.064611    x:0.206035      y:-0.144628   theta:0.0824043
+result 19:   frame_id: 472    score: 0.0642401   x:86209.5       y:5929.47     theta:2.90297
 
 
 
 
 result for rgb166.png 
-result 0:   frame_id: 166    score: 1   x:5.93231   y:2.12083   theta:2.98002
-result 1:   frame_id: 167    score: 0.0711954   x:5.89423   y:2.10534   theta:2.99095
-result 2:   frame_id: 168    score: 0.05143   x:5.82774   y:2.02262   theta:3.00744
-result 3:   frame_id: 162    score: 0.0433674   x:6.07323   y:2.24401   theta:2.94426
-result 4:   frame_id: 172    score: 0.0425471   x:5.92175   y:1.8964   theta:2.98179
-result 5:   frame_id: 163    score: 0.0415118   x:5.93876   y:2.29396   theta:2.98268
-result 6:   frame_id: 169    score: 0.0397726   x:5.81286   y:2.00867   theta:3.01124
-result 7:   frame_id: 161    score: 0.0377171   x:6.00542   y:2.44722   theta:2.97254
-result 8:   frame_id: 164    score: 0.0367645   x:5.93752   y:2.26431   theta:2.98401
-result 9:   frame_id: 170    score: 0.0272418   x:5.76781   y:1.92724   theta:3.02319
-result 10:   frame_id: 173    score: 0.0248939   x:6.1099   y:2.30433   theta:2.96002
-result 11:   frame_id: 158    score: 0.0214829   x:7.10162   y:-8.507   theta:2.89693
-result 12:   frame_id: 174    score: 0.0213827   x:5.71859   y:2.4348   theta:3.02341
-result 13:   frame_id: 157    score: 0.0207831   x:7.22937   y:-9.53613   theta:3.07671
-result 14:   frame_id: 160    score: 0.0192237   x:5.8681   y:1.99376   theta:2.98528
+result 0:    frame_id: 166    score: 1   		 x:5.93231   y:2.12083   theta:2.98002
+result 1:    frame_id: 167    score: 0.0711954   x:5.89423   y:2.10534   theta:2.99095
+result 2:    frame_id: 168    score: 0.05143     x:5.82774   y:2.02262   theta:3.00744
+result 3:    frame_id: 162    score: 0.0433674   x:6.07323   y:2.24401   theta:2.94426
+result 4:    frame_id: 172    score: 0.0425471   x:5.92175   y:1.8964    theta:2.98179
+result 5:    frame_id: 163    score: 0.0415118   x:5.93876   y:2.29396   theta:2.98268
+result 6:    frame_id: 169    score: 0.0397726   x:5.81286   y:2.00867   theta:3.01124
+result 7:    frame_id: 161    score: 0.0377171   x:6.00542   y:2.44722   theta:2.97254
+result 8:    frame_id: 164    score: 0.0367645   x:5.93752   y:2.26431   theta:2.98401
+result 9:    frame_id: 170    score: 0.0272418   x:5.76781   y:1.92724   theta:3.02319
+result 10:   frame_id: 173    score: 0.0248939   x:6.1099    y:2.30433   theta:2.96002
+result 11:   frame_id: 158    score: 0.0214829   x:7.10162   y:-8.507    theta:2.89693
+result 12:   frame_id: 174    score: 0.0213827   x:5.71859   y:2.4348    theta:3.02341
+result 13:   frame_id: 157    score: 0.0207831   x:7.22937   y:-9.53613  theta:3.07671
+result 14:   frame_id: 160    score: 0.0192237   x:5.8681    y:1.99376   theta:2.98528
 result 15:   frame_id: 171    score: 0.0186299   x:5.75016   y:1.88338   theta:3.02816
-result 16:   frame_id: 159    score: 0.0172483   x:5.17752   y:-9.54924   theta:3.04377
-result 17:   frame_id: 156    score: 0.0139583   x:7.07287   y:-8.96258   theta:2.80645
+result 16:   frame_id: 159    score: 0.0172483   x:5.17752   y:-9.54924  theta:3.04377
+result 17:   frame_id: 156    score: 0.0139583   x:7.07287   y:-8.96258  theta:2.80645
 result 18:   frame_id: 175    score: 0.0132031   x:5.64273   y:2.57497   theta:3.03079
-result 19:   frame_id: 121    score: 0.0122519   x:0.802124   y:-1.1073   theta:1.27738
+result 19:   frame_id: 121    score: 0.0122519   x:0.802124  y:-1.1073   theta:1.27738
 
+
+result for rgb260.png 
+
+result 0:    frame_id: 260    score: 1   		 x:9.88652   y:3.61278   theta:2.72927   state:1
+result 1:    frame_id: 261    score: 0.0864794   x:10.3216   y:3.01969   theta:2.73475   state:1
+result 2:    frame_id: 258    score: 0.0818935   x:10.3458   y:2.96634   theta:2.73824   state:1
+result 3:    frame_id: 259    score: 0.0803074   x:10.3559   y:3.01768   theta:2.7419    state:1
+result 4:    frame_id: 256    score: 0.0754513   x:10.3826   y:2.97796   theta:2.74815   state:1
+result 5:    frame_id: 253    score: 0.0697977   x:10.3326   y:2.98229   theta:2.7439    state:1
+result 6:    frame_id: 257    score: 0.0630406   x:10.3628   y:2.96788   theta:2.74328   state:1
+result 7:    frame_id: 262    score: 0.061544    x:10.3165   y:3.0371    theta:2.73522   state:1
+result 8:    frame_id: 254    score: 0.0599786   x:10.435    y:3.02145   theta:2.76374   state:1
+result 9:    frame_id: 252    score: 0.0598985   x:10.4017   y:3.0538    theta:2.76079   state:1
+result 10:   frame_id: 251    score: 0.0540477   x:10.3529   y:3.06178   theta:2.75177   state:1
+result 11:   frame_id: 255    score: 0.05008     x:10.3326   y:2.9465    theta:2.73857   state:1
+result 12:   frame_id: 263    score: 0.0360672   x:10.3219   y:3.04862   theta:2.73592   state:1
+result 13:   frame_id: 264    score: 0.0319114   x:10.2862   y:3.08902   theta:2.73475   state:1
+result 14:   frame_id: 249    score: 0.0304109   x:10.3726   y:3.08206   theta:2.7598    state:1
+result 15:   frame_id: 248    score: 0.0262705   x:10.3619   y:3.05817   theta:2.75758   state:1
+result 16:   frame_id: 265    score: 0.0260094   x:10.2952   y:3.09771   theta:2.73509   state:1
+result 17:   frame_id: 250    score: 0.0258338   x:10.3628   y:3.01612   theta:2.75198   state:1
+result 18:   frame_id: 247    score: 0.0215262   x:22531.4   y:1601.53   theta:1.60017   state:0
+result 19:   frame_id: 267    score: 0.0186977   x:9.99037   y:2.99555   theta:2.68821   state:1
+result 20:   frame_id: 270    score: 0.0127184   x:19.4899   y:-3.43963  theta:0.641845  state:0
+result 21:   frame_id: 390    score: 0.0121089   x:3.12576   y:-3.14527  theta:1.69019   state:0
+result 22:   frame_id: 272    score: 0.0120134   x:-85.9652  y:-61.811   theta:3.0239    state:0
+result 23:   frame_id: 269    score: 0.0117791   x:15993.8   y:13644.6   theta:3.01761   state:0
+result 24:   frame_id: 246    score: 0.0114794   x:12.1802   y:-11.654   theta:3.10526   state:0
+result 25:   frame_id: 266    score: 0.0112503   x:10.2204   y:3.00691   theta:2.71409   state:1
+result 26:   frame_id: 268    score: 0.0097494   x:10.0221   y:2.9804    theta:2.68733   state:1
+result 27:   frame_id: 311    score: 0.00927616  x:4.13517   y:-2.40855  theta:2.45819   state:0
+result 28:   frame_id: 428    score: 0.00913736  x:3.03934   y:-1.63611  theta:2.02017   state:0
+result 29:   frame_id: 431    score: 0.00913369  x:3.45266   y:-0.26802  theta:2.62451   state:0
+
+result for rgb108.png 
+result 0:    frame_id: 148    score: 0.0126872    x:5.73222   y:2.03783    theta:1.04336   state:0
+result 1:    frame_id: 433    score: 0.0120464    x:-1.5408   y:-1.38974   theta:1.33463   state:0
+result 2:    frame_id: 359    score: 0.0111475    x:9.13025   y:-2.15195   theta:1.19723   state:1
+result 3:    frame_id: 151    score: 0.0106566    x:-20.6192  y:-23.9704   theta:1.26239   state:0
+result 4:    frame_id: 176    score: 0.00925884   x:2.21208   y:1.33933    theta:2.25988   state:0
+result 5:    frame_id: 318    score: 0.00922569   x:13.9951   y:-0.0801253 theta:1.93416   state:0
+result 6:    frame_id: 182    score: 0.00917663   x:14.1641   y:-1.77477   theta:0.842042  state:0
+result 7:    frame_id: 175    score: 0.00916646   x:0   	  y:0   	   theta:0  	   state:0
+result 8:    frame_id: 183    score: 0.00907113   x:12.6079   y:-3.71523   theta:3.01019   state:0
+result 9:    frame_id: 41     score: 0.00904253   x:2.33991   y:7.214      theta:0.665852  state:0
+result 10:   frame_id: 48     score: 0.00875533   x:2.15045   y:-1.94479   theta:2.19531   state:0
+result 11:   frame_id: 270    score: 0.00851405   x:4.07441   y:-3.97683   theta:1.38664   state:0
+result 12:   frame_id: 105    score: 0.0082153    x:9.75673   y:5.94076    theta:2.64359   state:0
+result 13:   frame_id: 181    score: 0.00808754   x:2.87382   y:2.17858    theta:1.97673   state:0
+result 14:   frame_id: 261    score: 0.00761995   x:11.4178   y:-6.94552   theta:0.967663  state:0
+result 15:   frame_id: 395    score: 0.00735333   x:41.1342   y:6.50983    theta:2.48904   state:0
+result 16:   frame_id: 152    score: 0.00731932   x:0   	  y:0   	   theta:0   	   state:0
+result 17:   frame_id: 254    score: 0.00729397   x:10.5334   y:-2.5741    theta:1.32274   state:0
+result 18:   frame_id: 43     score: 0.00721448   x:12.2319   y:1.5622     theta:2.71008   state:0
+result 19:   frame_id: 93     score: 0.00721273   x:0  	  	  y:0   	   theta:0   	   state:0
+result 20:   frame_id: 83     score: 0.00716563   x:4.97184   y:2.40009    theta:2.21632   state:0
+result 21:   frame_id: 238    score: 0.00707212   x:8.7471    y:-1.25118   theta:2.64561   state:0
+result 22:   frame_id: 243    score: 0.00705722   x:13.6948   y:3.02097    theta:1.21648   state:0
+result 23:   frame_id: 178    score: 0.00704144   x:0   	  y:0   	   theta:0   	   state:0
+result 24:   frame_id: 174    score: 0.00696645   x:0   	  y:0      	   theta:0   	   state:0
+result 25:   frame_id: 109    score: 0.00693818   x:8.3267    y:2.75408    theta:2.28706   state:0
+result 26:   frame_id: 331    score: 0.00690783   x:5.68314   y:-5.4072    theta:1.20681   state:0
+result 27:   frame_id: 17     score: 0.0068879    x:-2.91933  y:0.561363   theta:1.98133   state:0
+result 28:   frame_id: 457    score: 0.00682607   x:-622.976  y:-441.11    theta:1.51505   state:0
+result 29:   frame_id: 266    score: 0.00677521   x:14.3227   y:-1.02441   theta:0.881669  state:0
 
 */
 
