@@ -5,6 +5,16 @@
 
 #include<opencv2/opencv.hpp>
 #include <math.h>
+
+class PoseResult   //表示相机位姿
+{
+	public:
+		double score, x, y,theta;int frame_id,num_inliers;bool state;
+		PoseResult():
+			score(0), x(0), y(0),theta(0),
+			frame_id(0),num_inliers(0),state(false){}		    			
+};
+
 int main( int argc, char** argv )
 {
     if ( argc != 2 )
@@ -18,7 +28,8 @@ int main( int argc, char** argv )
     localization::Config::setParameterFile ( argv[1] );    
     string map_dir = localization::Config::get<string> ( "map_dir" );
     string image_query_dir = localization::Config::get<string> ( "image_query_dir" );
-    
+    string dir_result_detailed_out = localization::Config::get<string>("result_detailed_dir");
+	string dir_result_simple_out = localization::Config::get<string>("result_simple_dir");
     
 	localization::PoseEstimation pose_estimation;    
 	pose_estimation.mapInitialization();		//初始化地图
@@ -27,57 +38,61 @@ int main( int argc, char** argv )
     localization::ImageRetrieve image_retrieve;
     image_retrieve.map_ = pose_estimation.map_;  //数据库为地图中的关键帧
     image_retrieve.databaseInit(); 
-    int num_result=30;
+    int num_result=20;
     image_retrieve.setResultNum(num_result);
     
     cout<<"initialization complete. "<<endl;
     
     
-    
-    
-    
+    ofstream fout(dir_result_detailed_out); //记录详细输出结果
+	ofstream fout1(dir_result_simple_out); //记录简单输出结果
+	
+	fout1<<"image_index state  x_value y_value theta_value"<<endl;
+	
+	
     /***根据输入的图像计算当前位姿***/           
-    //for ( int i=0; i<1; i++ )
-    //{	 
+    for ( int i=1; i<=303; i++ )
+    {	 
 
-     //   string color_path = image_query_dir+"/"+to_string(i+1)+".png"; 
-     //   string depth_path = image_query_dir+"/"+to_string(i+1)+".png"; 
+        string color_path = image_query_dir+"/rgb/rgb"+to_string(i)+".png"; 
+        string depth_path = image_query_dir+"/depth/depth"+to_string(i)+".png"; 
      
-        string color_path = image_query_dir+"/rgb260.png"; 
-        string depth_path = image_query_dir+"/depth260.png";  
+        //string color_path = image_query_dir+"/rgb260.png"; 
+        //string depth_path = image_query_dir+"/depth260.png";  
         
-                         
+    /***对捕获到的图像检索相似帧***/                     
         image_retrieve.frame_query_->color_ = imread(color_path);
         image_retrieve.frame_query_->depth_ = imread(depth_path);   
         image_retrieve.frame_query_->extractKeyPoints();
         image_retrieve.frame_query_->computeDescriptors();
-        
-        /*
-		Mat picture(1000,1000,CV_8UC3,Scalar(255,255,255));      	     	
-		Point center = Point(0,0); */
+     	
+        image_retrieve.retrieve_result();  
 
-      	
-        image_retrieve.retrieve_result();         
-    //    cout<<"searching for image "<<i<<" returns "<< num_result <<" results" <<endl;
-        cout<<"searching for image_query "<<" returns "<< num_result <<" results" <<endl;
-        
-        pose_estimation.map_->map_points_.clear();
-        
-        class PoseResult{public:double score, x, y,theta;int frame_id;bool state;};  //表示相机位姿
-        
-        
-        
+        cout<<"searching for image_query "<< i <<" returns "<< num_result <<" results" <<endl;
+        fout<<"searching for image_query "<< i <<" returns "<< num_result <<" results" <<endl;
+    /***************************/            
+
+
+	/***对得到的所有相似帧，分别估计当前相机位姿***/    
+		fout1<< i << "  "; 
+		            
         vector<PoseResult>pose_result_vec;
-        	
+     	
         for(int k=0; k<num_result; k++)
         {
         	PoseResult pose_result;
         	SE3 T_temp;
         	pose_estimation.T_c_w_estimated_ = T_temp;		//对上一次的结果清零
+     	
+        	pose_result.frame_id = image_retrieve.EntryId_frame_id_[image_retrieve.result_[k].Id];          	     	
+        	pose_result.score = image_retrieve.result_[k].Score;   
         	
-        	pose_result.frame_id = image_retrieve.EntryId_frame_id_[image_retrieve.result_[k].Id];        	
-        	pose_result.score = image_retrieve.result_[k].Score;
-        	
+    		if(pose_result.score<0.0150)		//得分太低的不计算运动
+	    	{
+	    		pose_result_vec.push_back(pose_result);
+	    		continue;
+	    	}  
+	    	    	
 		    cout <<"result " << k 
 		    	 //<<" entry_id: " << image_retrieve.result_[k].Id 
 		    	 <<"   frame_id: " << pose_result.frame_id
@@ -85,90 +100,112 @@ int main( int argc, char** argv )
 		    	 <<endl;
 		   
 		   
-		    Mat K = ( Mat_<double> ( 3,3 ) << 525.0, 0, 319.5, 0, 525.0, 239.5, 0, 0, 1 );                 
+		    //Mat K = ( Mat_<double> ( 3,3 ) << 525.0, 0, 319.5, 0, 525.0, 239.5, 0, 0, 1 );                 
 		                    			 				
 			pose_estimation.curr_= image_retrieve.frame_query_;
 			pose_estimation.ref_= pose_estimation.map_->keyframes_[ pose_result.frame_id ];
-			
 
-			//估计当前帧与参考帧的运动,3d点为参考帧上产生的地图点,2d点为当前帧的像素点
-						
-			for ( size_t i=0; i < pose_estimation.ref_->keypoints_.size(); i++ )   //计算参考帧上产生的地图点
-		    {
-		    	
-		        double d = pose_estimation.ref_->findDepth ( pose_estimation.ref_->keypoints_[i] );
-		        if ( d < 0 ) 
-		            continue;
-		        Vector3d p_world = pose_estimation.ref_->camera_->pixel2world (
-		        	Vector2d ( pose_estimation.ref_->keypoints_[i].pt.x, pose_estimation.ref_->keypoints_[i].pt.y ), 
-		        		pose_estimation.ref_->T_c_w_, d   );
-
-		                      
-		        Vector3d n;// = p_world - pose_estimation.ref_->getCamCenter();
-		        n.normalize();
-		        localization::MapPoint::Ptr map_point =localization::MapPoint::createMapPoint(  p_world, n,
-		          				 pose_estimation.ref_->descriptors_.row(i).clone(), pose_estimation.ref_.get()    );
-		        pose_estimation.map_->insertMapPoint( map_point ); 
-		        							//计算这一参考帧产生的地图点,其实跟地图没有关系,只是计算它的三维点
-		    }	
-		    	   		
+			//估计当前帧与参考帧的运动,3d点为参考帧上产生的地图点,2d点为当前帧的像素点		    	   		
 			if ( pose_estimation.featureMatching(pose_estimation.curr_, pose_estimation.ref_) ) //匹配成功才做运动估计
 			{
 				pose_estimation.poseEstimationPnP();
-				pose_result.state = pose_estimation.checkEstimatedPose();				
+				pose_result.num_inliers =pose_estimation.num_inliers_	;	//RANSAC运动估计的内点数	
+				pose_result.state = pose_estimation.checkEstimatedPose();	//运动估计结果的状态				
 			}
-					
-			pose_estimation.map_->map_points_.clear();	//清除地图点
 		
 			Sophus::SE3 Twc = pose_estimation.T_c_w_estimated_.inverse();			
 			cout <<"Twc"<<endl<<Twc.matrix() << endl <<endl <<endl;	
 			
 			
 			pose_result.x= Twc.matrix()(0,3);
-			pose_result.y= Twc.matrix()(2,3);
-			
+			pose_result.y= Twc.matrix()(2,3);			
 			pose_result.theta= acos(0.5*((Twc.matrix()(0,0)+Twc.matrix()(1,1)+Twc.matrix()(2,2))-1)) ;
 			pose_result_vec.push_back(pose_result);
-
-
-			/*
-			center.x =500+Twc.matrix()(0,3)*10;
-			center.y =500+Twc.matrix()(2,3)*10;  
-			cout <<"x:"<<center.x <<"  y:"<<center.y<<endl;
-			//半径  
-			int r = 10;  
-			//承载图像  
-			 
-			//参数为：承载的图像、圆心、半径、颜色、粗细、线型  
-			circle(picture,center,r,Scalar(0,0,250));  
-			*/
-			
 										
 		}
-		
-		/***输出结果***/
+	/***********************************/	
+	
+	/***记录所有结果到文件***/
 		cout <<"result"<<endl;
 		for(int k=0; k<num_result; k++)
 		{
-			
-			cout << "result " << k << ":   " 
+		    if(pose_result_vec[k].score<0.0150) //得分太低的没有计算运动，结果都是0，不保存
+	    	{
+	    		continue;
+	    	}
+			fout << "result " << k << ":   " 
 				 << "frame_id: " << pose_result_vec[k].frame_id << "   "
 				 << " score: "  << pose_result_vec[k].score << "   "
+				 << " num_inliers: "  << pose_result_vec[k].num_inliers << "   "
 				 << "x:"<< pose_result_vec[k].x << "   "
 				 << "y:"<< pose_result_vec[k].y << "   "
 				 << "theta:"<<pose_result_vec[k].theta <<"   "
 				 << "state:"<<pose_result_vec[k].state << endl;
 		}
-		
-		
-		
-		
-		/*imshow("pose",picture); 
-		waitKey(0);*/																	      
-    //}
+	/**********************/
+	//对求得的结果作加权平均，分数占0.8，内点0.2
+		int num_good_pose(0);
+		double pose_x(0), pose_y(0),pose_theta(0);
+		double pose_score_total(0), pose_inliers_total(0);		
+		for(int k=0; k<num_result; k++)
+		{
+			if(pose_result_vec[k].state)
+			{
+				num_good_pose++;
+				pose_score_total += pose_result_vec[k].score;
+				pose_inliers_total += pose_result_vec[k].num_inliers;
+			}	
+		}
+					
+		if(num_good_pose !=0)
+		{
+			for(int k=0; k<num_result; k++)
+			{
+				if(pose_result_vec[k].state)
+				{					
+					double pose_weight(0);
+					pose_weight =( (0.8*pose_result_vec[k].score   /pose_score_total)  + 
+							       (0.2*pose_result_vec[k].num_inliers /pose_inliers_total)  );
+					pose_x +=pose_weight * pose_result_vec[k].x; 							  
+					pose_y +=pose_weight * pose_result_vec[k].y;
+					pose_theta +=pose_weight * pose_result_vec[k].theta;
+				}	
 
-
-
+			}
+									
+			cout<<"good pose :" <<" x:" << pose_x 	
+								<<"   y:" << pose_y 
+								<<"   theta:" << pose_theta
+								<<endl;
+			cout << endl << endl <<endl;					
+									
+			fout<<"good pose :" <<" x:" << pose_x 	
+								<<"   y:" << pose_y 
+								<<"   theta:" << pose_theta
+								<<endl;	
+			fout << endl << endl <<endl;
+				
+			fout1<<"find "<< pose_x 	
+						  <<" " << pose_y 
+						  <<" " << pose_theta
+						  <<endl;	
+												
+		}
+		else			 
+		{
+			cout << "not find valid similar frame!" <<endl;
+			cout << endl <<endl;	
+			
+			
+			fout << "not find valid similar frame!" <<endl;
+			fout << endl <<endl << endl ;
+			
+			fout1 << "lost" <<endl;				
+		} 	
+	}
+	
+	fout.close();
+	fout1.close();
 }
 
 

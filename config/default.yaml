@@ -2,24 +2,26 @@
 
 
 # the project directory 
-project_dir: /home/robot/a_myfile/localization
+project_dir: /home/robot/A_myProgram/localization
 
 
 # data
 # the tum dataset directory
-image_database_dir: /home/robot/a_myfile/data/image_data_taozihu/222
-image_query_dir: /home/robot/a_myfile/data/image_query/taozihu1
+image_database_dir: /home/robot/A_myData/image_data_taozihu/tzh1711_5
+image_query_dir: /home/robot/A_myData/image_capture_5
 
 # the vocabulary directory
-vocabulary_dir: /home/robot/a_myfile/data/vocabulary/orbvoc.dbow3
-database_dir:/home/robot/a_myfile/data/database/database.yml.gz
-db_frame_id_dir:/home/robot/a_myfile/data/database/db_frame_id_.txt             
+vocabulary_dir:/home/robot/A_myData/vocabulary/orbvoc.dbow3
+database_dir:/home/robot/A_myData/image_data_taozihu/tzh1711_5/database.yml.gz
+db_frame_id_dir:/home/robot/A_myData/image_data_taozihu/tzh1711_5/db_frame_id_.txt             
 # EntryId与frame_id_的对应关系
 
+result_detailed_dir:/home/robot/A_myProgram/localization/result/result_detailed.txt
+result_simple_dir:/home/robot/A_myProgram/localization/result/result_simple.txt
 
 
 #the instance of Map directory
-map_dir:/home/robot/a_myfile/data/map/map.yml
+map_dir:/home/robot/A_myData/map/map.yml
 # camera intrinsics
 # fr1
 #camera.fx: 517.3

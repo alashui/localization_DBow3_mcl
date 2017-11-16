@@ -30,7 +30,28 @@ PoseEstimation::~PoseEstimation(){}
 bool PoseEstimation::featureMatching( const Frame::Ptr frame_curr,
 									  const Frame::Ptr frame_ref   )
 {
-    boost::timer timer;   
+    boost::timer timer; 
+    
+    map_->map_points_.clear();	//清除地图点            
+	for ( size_t i=0; i < frame_ref->keypoints_.size(); i++ )   //计算参考帧上产生的地图点
+	{
+		
+	    double d = frame_ref->findDepth ( frame_ref->keypoints_[i] );
+	    if ( d < 0 ) 
+	        continue;
+	    Vector3d p_world = frame_ref->camera_->pixel2world (
+	    	Vector2d ( frame_ref->keypoints_[i].pt.x, frame_ref->keypoints_[i].pt.y ), 
+	    		frame_ref->T_c_w_, d   );
+
+	                  
+	    Vector3d n;// = p_world - pose_estimation.ref_->getCamCenter();
+	    n.normalize();
+	    MapPoint::Ptr map_point =localization::MapPoint::createMapPoint(  p_world, n,
+	      				 frame_ref->descriptors_.row(i).clone(), frame_ref.get()    );
+	    map_->insertMapPoint( map_point ); 
+	    							//计算这一参考帧产生的地图点,其实跟地图没有关系,只是计算它的三维点
+	}
+        
     vector<cv::DMatch> matches;
               
     // select the candidates in map 
@@ -117,49 +138,50 @@ void PoseEstimation::poseEstimationPnP()
                            SO3 ( rvec.at<double> ( 0,0 ), rvec.at<double> ( 1,0 ), rvec.at<double> ( 2,0 ) ),
                            Vector3d ( tvec.at<double> ( 0,0 ), tvec.at<double> ( 1,0 ), tvec.at<double> ( 2,0 ) )
                        );
-                                       
-    // using bundle adjustment to optimize the pose
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,3>> Block;
-    Block::LinearSolverType* linearSolver = new g2o::LinearSolverDense<Block::PoseMatrixType>();
-    //Block::LinearSolverType* linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>();
-    Block* solver_ptr = new Block ( linearSolver );
-    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );
-    //g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton ( solver_ptr );
-    g2o::SparseOptimizer optimizer;
-    optimizer.setAlgorithm ( solver );
- 
+    if ( num_inliers_ >= min_inliers_ ) //内点数太少则不进行g2o优化
+    {                                       
+		// using bundle adjustment to optimize the pose
+		typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,3>> Block;
+		Block::LinearSolverType* linearSolver = new g2o::LinearSolverDense<Block::PoseMatrixType>();
+		//Block::LinearSolverType* linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>();
+		Block* solver_ptr = new Block ( linearSolver );
+		g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );
+		//g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton ( solver_ptr );
+		g2o::SparseOptimizer optimizer;
+		optimizer.setAlgorithm ( solver );
+	 
 
-    g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
-    pose->setId ( 0 );
-    pose->setEstimate ( g2o::SE3Quat (
-        T_c_w_estimated_.rotation_matrix(), T_c_w_estimated_.translation()
-    ));
-    optimizer.addVertex ( pose );
-    // edges	 
-    for ( int i=0; i<inliers.rows; i++ )
-    {
-        int index = inliers.at<int> ( i,0 );  
-        // 3D -> 2D projection
-        EdgeProjectXYZ2UVPoseOnly* edge = new EdgeProjectXYZ2UVPoseOnly();
-        edge->setId ( i );
-        edge->setVertex ( 0, pose );
-        edge->camera_ = curr_->camera_.get();
-        edge->point_ = Vector3d ( pts3d[index].x, pts3d[index].y, pts3d[index].z );
-        edge->setMeasurement ( Vector2d ( pts2d[index].x, pts2d[index].y ) );
-        edge->setInformation ( Eigen::Matrix2d::Identity() );
-        optimizer.addEdge ( edge );
-        // set the inlier map points 
-        //match_3dpts_[index]->matched_times_++;
-    }
+		g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
+		pose->setId ( 0 );
+		pose->setEstimate ( g2o::SE3Quat (
+		    T_c_w_estimated_.rotation_matrix(), T_c_w_estimated_.translation()
+		));
+		optimizer.addVertex ( pose );
+		// edges	 
+		for ( int i=0; i<inliers.rows; i++ )
+		{
+		    int index = inliers.at<int> ( i,0 );  
+		    // 3D -> 2D projection
+		    EdgeProjectXYZ2UVPoseOnly* edge = new EdgeProjectXYZ2UVPoseOnly();
+		    edge->setId ( i );
+		    edge->setVertex ( 0, pose );
+		    edge->camera_ = curr_->camera_.get();
+		    edge->point_ = Vector3d ( pts3d[index].x, pts3d[index].y, pts3d[index].z );
+		    edge->setMeasurement ( Vector2d ( pts2d[index].x, pts2d[index].y ) );
+		    edge->setInformation ( Eigen::Matrix2d::Identity() );
+		    optimizer.addEdge ( edge );
+		    // set the inlier map points 
+		    //match_3dpts_[index]->matched_times_++;
+		}
 
-    optimizer.initializeOptimization();
-    optimizer.optimize (10); 
+		optimizer.initializeOptimization();
+		optimizer.optimize (10); 
 
-    T_c_w_estimated_ = SE3 (    
-        pose->estimate().rotation(),
-        pose->estimate().translation()        
-    );
-
+		T_c_w_estimated_ = SE3 (    
+		    pose->estimate().rotation(),
+		    pose->estimate().translation()        
+		);
+	}
 //    cout<<"T_c_w_estimated_: "<<endl<<T_c_w_estimated_.matrix()<<endl;
 
 }

@@ -1,5 +1,6 @@
 build
 bin
+result
 *~
 *.kdev4
 *.swp

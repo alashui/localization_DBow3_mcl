@@ -28,7 +28,7 @@ namespace localization
 		//DBoW3::Database db( vocab, true, 0);
 		database_.setVocabulary( vocab, true, 0);
 
-		ofstream fout(db_frame_id_dir);	
+		ofstream fout(db_frame_id_dir);
 		for ( auto iter = map_->keyframes_.begin(); iter != map_->keyframes_.end(); iter++)
 		{			
 			unsigned int EntryId = database_.add((iter->second)->descriptors_);  //EntryId为这个描述子转换为词袋向量后存在database中的id			
@@ -36,9 +36,9 @@ namespace localization
 			//因为map->keyframes_是unordered_map类型，是无序的，所以这里将EntryId与frame_id_的对应关系保存
 			fout << EntryId << " " << iter->second->id_ << endl;		
 		}
-		fout.close();			   		    		    		    
+		fout.close();		   		    		    		    
 		database_.save(database_dir );
-			
+		
 		cout<<"database info: "<<database_<<endl;
 		cout<<"database save in" << database_dir <<endl;
 		cout<<"the database has been established."<<endl;
@@ -117,7 +117,7 @@ namespace localization
 				if ( EntryId_frame_id_.find(EntryId) == EntryId_frame_id_.end() )
 					EntryId_frame_id_.insert( make_pair(EntryId, frame_id) );
 				else			  
-					EntryId_frame_id_[ EntryId] = frame_id;																			
+					EntryId_frame_id_[ EntryId] = frame_id;																
 		   }
 		}
 	}
@@ -149,7 +149,10 @@ namespace localization
 				create_database();
 	   		}
 	   		else 
-	   		    read_db_frame_id_();
+	   		{
+	   			read_db_frame_id_();
+	   			cout<<"read read_db_frame_id.txt"<<endl;
+	   		}    
    		}		
 	}
 			
