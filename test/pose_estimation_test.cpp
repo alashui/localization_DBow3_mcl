@@ -2,9 +2,9 @@
 #include "localization/pose_estimation.h"
 #include "localization/image_retrieve.h"
 #include "localization/config.h"
-
+#include <dirent.h>   //用于遍历目录文件的库
 #include<opencv2/opencv.hpp>
-#include <math.h>
+
 
 class PoseResult   //表示相机位姿
 {
@@ -49,9 +49,23 @@ int main( int argc, char** argv )
 	
 	fout1<<"image_index state  x_value y_value theta_value"<<endl;
 	
-	
+	//计算该目录下有多少个文件
+	struct dirent *ptr;      
+    DIR *dir;  
+    dir=opendir((image_query_dir+"/rgb").c_str());   
+    vector<string> dir_files;    
+    while((ptr=readdir(dir))!=NULL)  
+    {         
+        //跳过'.'和'..'两个目录  
+        if(ptr->d_name[0] == '.')  
+            continue;   
+        dir_files.push_back(ptr->d_name);  
+    }                  
+    closedir(dir); 
+    
+    
     /***根据输入的图像计算当前位姿***/           
-    for ( int i=1; i<=303; i++ )
+    for ( int i=1; i<=dir_files.size(); i++ )
     {	 
 
         string color_path = image_query_dir+"/rgb/rgb"+to_string(i)+".png"; 
